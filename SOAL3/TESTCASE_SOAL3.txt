@@ -1,0 +1,253 @@
+TEST CASES - PARKING MANAGEMENT SYSTEM
+=======================================
+
+Sistem Parkir:
+- 2 Lantai Parkir
+- Lantai 1: 2 RegularSlot (R1-01, R1-02), 1 EVSlot (E1-01), 1 VIPSlot (V1-01)
+- Lantai 2: 1 RegularSlot (R2-01), 1 EVSlot (E2-01), 2 VIPSlot (V2-01, V2-02)
+- Total: 8 Slot Parkir
+
+Tarif:
+- Motorcycle: Rp 2.000 / jam
+- Car: Rp 5.000 / jam  
+- EV: Rp 4.000 / jam + Rp 3.000 (charging fee jika perlu)
+- VIP Surcharge: +50% dari tarif dasar
+- Diskon: >24 jam dapat diskon 10%
+
+MINIMAL 7 TEST CASE:
+==================================
+
+TEST CASE 1: Park Motorcycle -> RegularSlot
+-------------------------------------------
+Deskripsi: Motorcycle harus diparkir di RegularSlot
+Langkah:
+1. Pilih menu 1 (Register vehicle dan park)
+2. Plate: B 1234 MC
+3. Owner: Andi
+4. Arrival time: 10 00 (jam 10:00)
+5. Vehicle type: 2 (Motorcycle)
+
+Expected Output:
+- "Vehicle B 1234 MC parked in Regular slot R1-01/R1-02 on floor 1"
+- Dapat Ticket ID: TICKET-1
+- Motorcycle tidak boleh parkir di EVSlot atau VIPSlot
+
+TEST CASE 2: Park EV dengan chargingRequired true -> EVSlot + charging fee
+----------------------------------------------------------------------------
+Deskripsi: EV yang butuh charging harus parkir di EVSlot dan dikenakan charging fee
+Langkah:
+1. Pilih menu 1 (Register vehicle dan park)
+2. Plate: EV 5678 AB
+3. Owner: Budi
+4. Arrival time: 11 00 (jam 11:00)
+5. Vehicle type: 3 (EV)
+6. Need charging: y (yes)
+
+Expected Output:
+- "Vehicle EV 5678 AB parked in EV slot E1-01 on floor 1"
+- Dapat Ticket ID: TICKET-2
+- Saat unpark harus ada charging fee Rp 3.000
+
+TEST CASE 3: Park Car dengan reservasi VIP -> VIPSlot + surcharge
+-------------------------------------------------------------------
+Deskripsi: Mobil dengan reservasi VIP harus parkir di VIPSlot dengan biaya +50%
+Prerequisite: Lakukan reservasi terlebih dahulu
+Langkah:
+A. Reservasi VIP:
+1. Pilih menu 3 (Reserve VIP slot)
+2. Plate: B 9999 CD
+3. Duration: 2 jam
+   Output: "VIP slot reserved for B 9999 CD for 2 hours"
+
+B. Parkir mobil:
+1. Pilih menu 1 (Register vehicle dan park)
+2. Plate: B 9999 CD (sama dengan reservasi)
+3. Owner: Cici
+4. Arrival time: 12 00 (jam 12:00)
+5. Vehicle type: 1 (Car)
+
+Expected Output:
+- "Vehicle B 9999 CD parked in VIP slot V1-01 on floor 1"
+- Dapat Ticket ID: TICKET-3
+- Biaya harus +50% dari tarif normal
+
+TEST CASE 4: Coba park ketika seluruh slot tipe terpakai -> NoAvailableSlotException
+--------------------------------------------------------------------------------------
+Deskripsi: Jika semua slot untuk tipe kendaraan penuh, harus throw exception
+Prerequisite: Isi semua RegularSlot dengan Motorcycle
+Langkah:
+1. Parkir 2 Motorcycle (isi semua RegularSlot di Lantai 1)
+2. Parkir 1 Motorcycle lagi (mencoba parkir saat RegularSlot penuh)
+
+Input untuk langkah 2:
+- Plate: B 0000 XX
+- Owner: Dodi
+- Arrival time: 13 00
+- Vehicle type: 2 (Motorcycle)
+
+Expected Output:
+- "PARKING ERROR: No available slot for this vehicle type"
+- Exception harus ditangkap dan pesan ditampilkan
+
+TEST CASE 5: Request reserve VIP saat penuh -> ReservationException
+---------------------------------------------------------------------
+Deskripsi: Jika semua VIPSlot sudah reserved atau occupied, harus throw exception
+Prerequisite: Reservasi semua VIPSlot
+Langkah:
+1. Reservasi 3 VIPSlot untuk kendaraan berbeda
+2. Coba reservasi VIPSlot ke-4
+
+Input untuk langkah 2:
+- Plate: B 8888 ZZ
+- Duration: 1 jam
+
+Expected Output:
+- "PARKING ERROR: VIP slot reservation failed"
+- ReservationException harus ditangkap
+
+TEST CASE 6: Unpark dengan ticket tidak valid -> InvalidTicketException
+------------------------------------------------------------------------
+Deskripsi: Jika ticket ID tidak valid, harus throw exception
+Langkah:
+1. Pilih menu 2 (Unpark)
+2. Ticket ID: TICKET-999 (tidak ada dalam sistem)
+3. Current time: 14 00 (jam 14:00)
+
+Expected Output:
+- "PARKING ERROR: Invalid ticket ID"
+- InvalidTicketException harus ditangkap
+
+TEST CASE 7: Durasi >24 jam -> diskon 10% diaplikasikan
+---------------------------------------------------------
+Deskripsi: Parkir lebih dari 24 jam harus dapat diskon 10%
+Langkah:
+1. Parkir Car pada hari pertama jam 8:00
+2. Unpark pada hari berikutnya jam 10:00 (26 jam kemudian)
+
+Input Parkir:
+- Plate: B 7777 KL
+- Owner: Eko
+- Arrival time: 8 00
+- Vehicle type: 1 (Car)
+- Ticket ID: TICKET-4
+
+Input Unpark:
+- Ticket ID: TICKET-4
+- Current time: 10 00 (hari berikutnya)
+
+Perhitungan:
+- Durasi: 26 jam
+- Biaya normal: 26 × Rp 5.000 = Rp 130.000
+- Diskon 10%: Rp 13.000
+- Total: Rp 117.000
+
+Expected Output:
+- "Vehicle B 7777 KL unparked. Duration: 26 hours. Total cost: Rp 117000"
+
+SKENARIO UJI (MINIMAL 3):
+=========================
+
+SKENARIO 1: Park dan Unpark Car Normal
+---------------------------------------
+Tujuan: Verifikasi parkir dan unpark mobil bekerja normal
+Langkah:
+1. Parkir Car:
+   - Plate: B 1111 AA
+   - Owner: Fajar
+   - Arrival time: 9 00
+   - Vehicle type: 1 (Car)
+   - Expected: Park di RegularSlot, dapat TICKET-5
+
+2. Unpark Car:
+   - Ticket ID: TICKET-5
+   - Current time: 12 00 (3 jam kemudian)
+   - Perhitungan: 3 × Rp 5.000 = Rp 15.000
+
+Expected Output:
+- Park: "Vehicle B 1111 AA parked in Regular slot R2-01 on floor 2"
+- Unpark: "Vehicle B 1111 AA unparked. Duration: 3 hours. Total cost: Rp 15000"
+
+SKENARIO 2: Park EV dengan chargingRequired true
+-------------------------------------------------
+Tujuan: Verifikasi EV dengan charging dikenakan fee tambahan
+Langkah:
+1. Parkir EV dengan charging:
+   - Plate: EV 2222 BB
+   - Owner: Gita
+   - Arrival time: 14 00
+   - Vehicle type: 3 (EV)
+   - Need charging: y
+   - Expected: Park di EVSlot, dapat TICKET-6
+
+2. Unpark EV:
+   - Ticket ID: TICKET-6
+   - Current time: 18 00 (4 jam kemudian)
+   - Perhitungan: (4 × Rp 4.000) + Rp 3.000 = Rp 16.000 + Rp 3.000 = Rp 19.000
+
+Expected Output:
+- Park: "Vehicle EV 2222 BB parked in EV slot E2-01 on floor 2"
+- Unpark: "Vehicle EV 2222 BB unparked. Duration: 4 hours. Total cost: Rp 19000"
+
+SKENARIO 3: Reserve VIP saat penuh -> Exception
+------------------------------------------------
+Tujuan: Verifikasi exception handling saat VIPSlot penuh
+Langkah:
+1. Isi semua VIPSlot:
+   - Reservasi V1-01 untuk kendaraan X
+   - Reservasi V2-01 untuk kendaraan Y
+   - Reservasi V2-02 untuk kendaraan Z
+
+2. Coba reservasi VIPSlot ke-4:
+   - Plate: B 3333 CC
+   - Duration: 2 jam
+
+3. Verifikasi exception:
+   - Exception harus ditangkap
+   - Pesan error harus ditampilkan
+
+Expected Output:
+- "PARKING ERROR: VIP slot reservation failed"
+- Flow program tidak crash
+
+FORMAT OUTPUT PROGRAM:
+======================
+
+Menu Utama:
+--------------------------------------------------
+             PARKING MANAGEMENT SYSTEM            
+--------------------------------------------------
+1. Register vehicle dan park
+2. Unpark (masukkan ticket id)
+3. Reserve VIP slot
+4. Show current occupation
+5. Generate daily report
+0. Exit
+Choice: 
+
+Output Parkir Berhasil:
+"Vehicle [PLATE] parked in [SLOT_TYPE] slot [SLOT_ID] on floor [FLOOR]. Ticket ID: [TICKET]"
+
+Output Unpark Berhasil:
+--------------------------------------------------
+Vehicle [PLATE] unparked. Duration: [HOURS] hours. Total cost: Rp [COST]
+
+Output Error:
+"PARKING ERROR: [ERROR_MESSAGE]"
+atau
+"PAYMENT ERROR: [ERROR_MESSAGE]"
+
+Output Report:
+-------------- DAILY PARKING REPORT --------------
+Floor utilization:
+  Floor 1: [OCCUPIED]/[TOTAL]
+  Floor 2: [OCCUPIED]/[TOTAL]
+Total vehicles parked: [COUNT]
+  Cars: [COUNT]
+  Motorcycles: [COUNT]
+  EVs: [COUNT]
+Available slots by type (per floor):
+Floor 1: Regular: [COUNT], EV: [COUNT], VIP: [COUNT]
+Floor 2: Regular: [COUNT], EV: [COUNT], VIP: [COUNT]
+
+
+=
